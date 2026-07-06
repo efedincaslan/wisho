@@ -67,6 +67,11 @@ struct BirthdayProvider: TimelineProvider {
             return BirthdayEntry(date: .now, isPro: false, birthdays: [])
         }
 
+        // Bail out rather than crash if the App Group entitlement is missing.
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
+            return BirthdayEntry(date: .now, isPro: true, birthdays: [])
+        }
+
         do {
             let schema = Schema([Person.self, WishEvent.self, AppSettings.self])
             let config = ModelConfiguration(schema: schema, groupContainer: .identifier(AppGroup.identifier))

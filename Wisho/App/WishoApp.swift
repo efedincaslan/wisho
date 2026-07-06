@@ -10,17 +10,20 @@ struct WishoApp: App {
 
     private let container: ModelContainer = {
         let schema = Schema([Person.self, WishEvent.self, AppSettings.self])
+        // Only use the shared App Group store when the entitlement is actually
+        // present — asking SwiftData for a group container without it can
+        // crash at launch (e.g. free-signed sideloaded builds).
+        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil,
+           let shared = try? ModelContainer(
+               for: schema,
+               configurations: [ModelConfiguration(schema: schema, groupContainer: .identifier(AppGroup.identifier))]
+           ) {
+            return shared
+        }
         do {
-            // Shared with the widget via the App Group container.
-            let config = ModelConfiguration(schema: schema, groupContainer: .identifier(AppGroup.identifier))
-            return try ModelContainer(for: schema, configurations: [config])
+            return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema)])
         } catch {
-            // Fallback for builds where the App Group entitlement isn't set up yet.
-            do {
-                return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema)])
-            } catch {
-                fatalError("Failed to create model container: \(error)")
-            }
+            fatalError("Failed to create model container: \(error)")
         }
     }()
 
