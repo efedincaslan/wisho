@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Compile check on every push — this is the Mac-less feedback loop.
+  # Compile + test + screenshot on every push — this is the Mac-less feedback loop.
   build-simulator:
-    name: Build for iOS Simulator
+    name: Tests & screenshots (simulator)
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -27,14 +27,33 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build (simulator, unsigned)
+      - name: Run tests (simulator)
         run: |
           set -o pipefail
-          xcodebuild build \
+          DEVICE=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9][A-Za-z0-9 ]*' | head -1 | sed 's/ *$//')
+          echo "Using simulator: $DEVICE"
+          xcodebuild test \
             -project Wisho.xcodeproj \
             -scheme Wisho \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
+
+      # UI tests attach screenshots of every screen — extract and publish
+      # them so the app can be reviewed visually without a device.
+      - name: Extract screenshots
+        if: always()
+        run: |
+          brew install chargepoint/xcparse/xcparse
+          xcparse screenshots TestResults.xcresult screenshots || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-screenshots
+          path: screenshots
+          if-no-files-found: ignore
+          retention-days: 14
 
   # Manual trigger: produce an unsigned device IPA for sideloading with
   # AltStore/SideStore on Windows. Not for App Store distribution.

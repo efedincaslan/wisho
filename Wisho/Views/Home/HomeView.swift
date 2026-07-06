@@ -34,6 +34,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("addPersonButton")
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -41,6 +42,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "gearshape")
                     }
+                    .accessibilityIdentifier("settingsButton")
                 }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }

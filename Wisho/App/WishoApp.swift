@@ -10,6 +10,14 @@ struct WishoApp: App {
 
     private let container: ModelContainer = {
         let schema = Schema([Person.self, WishEvent.self, AppSettings.self])
+        // UI tests run against a fresh in-memory store.
+        if ProcessInfo.processInfo.arguments.contains("--uitesting"),
+           let testContainer = try? ModelContainer(
+               for: schema,
+               configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+           ) {
+            return testContainer
+        }
         // Only use the shared App Group store when the entitlement is actually
         // present — asking SwiftData for a group container without it can
         // crash at launch (e.g. free-signed sideloaded builds).
@@ -66,6 +74,11 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, hasCompletedOnboarding {
                 Task { await Maintenance.run(context: context, isPro: store.isPro) }
+            }
+        }
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--uitesting") {
+                UITestSeed.populateIfNeeded(context: context)
             }
         }
     }

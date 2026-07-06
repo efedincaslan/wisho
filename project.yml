@@ -35,6 +35,27 @@ targets:
     dependencies:
       - target: WishoWidget
         embed: true
+  WishoTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WishoTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wisho.app.tests
+    dependencies:
+      - target: Wisho
+  WishoUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - WishoUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.wisho.app.uitests
+        TEST_TARGET_NAME: Wisho
+    dependencies:
+      - target: Wisho
   WishoWidget:
     type: app-extension
     platform: iOS
@@ -62,6 +83,13 @@ schemes:
     build:
       targets:
         Wisho: all
+        WishoTests: [test]
+        WishoUITests: [test]
     run:
       config: Debug
       storeKitConfiguration: Wisho.storekit
+    test:
+      config: Debug
+      targets:
+        - WishoTests
+        - WishoUITests
