@@ -21,18 +21,26 @@ final class ScreenshotTests: XCTestCase {
         let sendButton = app.buttons["Send your wish"].firstMatch
         if sendButton.waitForExistence(timeout: 5) {
             sendButton.tap()
-            _ = app.buttons["Close"].firstMatch.waitForExistence(timeout: 5)
+            let close = app.buttons["Close"].firstMatch
+            _ = close.waitForExistence(timeout: 5)
+            sleep(1) // let the sheet finish presenting so taps land reliably
             snap(app, "02-send-sheet")
-            app.buttons["Close"].firstMatch.tap()
+            close.tap()
+            // Wait until the sheet is actually gone before touching Home.
+            if !sendButton.waitForExistence(timeout: 3) {
+                app.swipeDown()
+            }
         }
 
         // Person detail via an upcoming row.
-        let firstRow = app.cells.element(boundBy: 1)
-        if firstRow.waitForExistence(timeout: 5) {
-            firstRow.tap()
+        let samRow = app.staticTexts["Sam Rivera"].firstMatch
+        if samRow.waitForExistence(timeout: 5) {
+            samRow.tap()
+            _ = app.navigationBars["Sam"].waitForExistence(timeout: 5)
             sleep(1)
             snap(app, "03-person-detail")
             app.navigationBars.buttons.element(boundBy: 0).tap()
+            _ = app.navigationBars["Wisho"].waitForExistence(timeout: 5)
         }
 
         // Settings.
