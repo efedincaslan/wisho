@@ -1,0 +1,11 @@
+# Xcode
+*.xcodeproj
+!project.yml
+xcuserdata/
+DerivedData/
+*.xcresult
+.DS_Store
+
+# SwiftPM
+.build/
+.swiftpm/

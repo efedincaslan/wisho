@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Compile check on every push — this is the Mac-less feedback loop.
+  build-simulator:
+    name: Build for iOS Simulator
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (simulator, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Wisho.xcodeproj \
+            -scheme Wisho \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+  # Manual trigger: produce an unsigned device IPA for sideloading with
+  # AltStore/SideStore on Windows. Not for App Store distribution.
+  build-ipa:
+    name: Unsigned device IPA (sideload)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (device, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Wisho.xcodeproj \
+            -scheme Wisho \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Wisho.app Payload/
+          zip -r Wisho-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Wisho-unsigned-ipa
+          path: Wisho-unsigned.ipa
+          retention-days: 14
